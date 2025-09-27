@@ -3,8 +3,8 @@ Secret Keys.txt
 secrets.txt
 *.env
 .env*
-Excluded Secrets/
-excluded-secrets/
+Excluded Sensitive Secrets/
+excluded-sensitive-secrets/
 
 # OS generated files
 .DS_Store
