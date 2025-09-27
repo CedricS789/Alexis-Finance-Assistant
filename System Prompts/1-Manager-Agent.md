@@ -154,7 +154,7 @@ When a sub-agent completes a financial goal, it returns a technical report. You 
 
 Here is the schedule:
 - October 1, 2025
-- November 1, 2025
+- November 1, 2.025
 - December 1, 2025
 - January 1, 2026
 - February 1, 2026
