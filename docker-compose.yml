@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+  n8n:
+    image: n8nio/n8n:1.113.1
+    restart: always
+    container_name: n8n
+    environment:
+      - N8N_HOST=n8n.cedric-coding-projects.com
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - VUE_APP_URL_BASE_URL=https://n8n.cedric-coding-projects.com/
+      - WEBHOOK_URL=https://n8n.cedric-coding-projects.com/
+      - NODE_ENV=production
+      - N8N_SECURE_COOKIE=true
+      - N8N_ENCRYPTION_KEY=ZoJXtvqAxv6N0YTA+oYVLuRzmitIaWAfzCx9Hne5IP0=
+      - GENERIC_TIMEZONE=Europe/Brussels
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

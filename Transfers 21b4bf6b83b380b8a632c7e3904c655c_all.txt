@@ -1,0 +1,2 @@
+﻿Name,Amount To Transfer,Receiver,Record Value,Sender,Transfer Date,Transfer Status
+"New Transfer - September 25, 2025 20:36",€10.00,Savings (https://www.notion.so/Savings-2474bf6b83b38052b054c8213dfd4ff4?pvs=21),€10.00,Main (https://www.notion.so/Main-2474bf6b83b380179e0fd1270115fc8a?pvs=21),"September 25, 2025 20:36 (GMT+2)",✅ Logged

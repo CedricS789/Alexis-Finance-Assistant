@@ -1,0 +1,5 @@
+﻿Name,Incomes,Last edited time,This Month Incomes
+Tutoring,,"August 6, 2025 10:08 AM",€0.00
+Jobs,,"September 19, 2025 12:31 PM",€0.00
+Other,"Adjustment (https://www.notion.so/Adjustment-2734bf6b83b3805a92a7ef8f3c1b55d2?pvs=21), Balance Adjustment (https://www.notion.so/Balance-Adjustment-2784bf6b83b38172894cd3f4266cb139?pvs=21), Family Allowances (https://www.notion.so/Family-Allowances-2794bf6b83b38138a4f0c3025152888f?pvs=21), Manou (https://www.notion.so/Manou-2794bf6b83b380fc8faaca566f7a8f6b?pvs=21)","August 13, 2025 2:31 AM",€0.00
+MD,"MD (https://www.notion.so/MD-2774bf6b83b381a3a6feca93748a4a9e?pvs=21), MD (https://www.notion.so/MD-2794bf6b83b38179b09fddd353dab5cb?pvs=21)","September 19, 2025 12:25 PM",€200.00
