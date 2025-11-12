@@ -1,0 +1,2327 @@
+{
+  "name": "Alexis - Finance Assistant Simplified",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "a315ed3e-17bb-4063-b791-fa97de448bba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "860634d1-8cbf-45bd-b57b-eae577613a73",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Photo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7a5b57c2-9a29-41c4-8a1e-da97c4f890ba",
+                    "leftValue": "={{ $json.message }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        560,
+        256
+      ],
+      "id": "39a9e8f4-c02e-4ab7-8d0f-5fd2d115040f",
+      "name": "Switch Input Type"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        -112
+      ],
+      "id": "95138b9b-8e90-47b5-a360-353325645325",
+      "name": "Get Voice File",
+      "webhookId": "64e8b0d1-d7e8-48f8-8d31-ee324866e7dd",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        -112
+      ],
+      "id": "39d3aed9-b2fc-469a-aebd-39e15aefc6d4",
+      "name": "Transcribe Recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id || $json.message.photo[1]}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        80
+      ],
+      "id": "1037c8c1-cadb-485c-8d9d-efcf67ce51ca",
+      "name": "Get Photo File",
+      "webhookId": "73508446-2cc5-48fb-9256-af8ebb3c813b",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Analyze this image by identifying the **main subject**, which may be a single object or a cohesive group of related items (e.g., a meal, a collection of groceries). Your role is to act as a tool providing structured information to a manager AI agent.\n\nFocus on creating a description that will be passed to a manager AI, maintaining accuracy. Consider the user caption as context for refining your description.\n\nUser Caption: {{ $('Telegram Trigger').item.json.message.caption || 'No caption provided' }}\n\n## Three-Step Process:\n\n1.  **Identify the Main Subject:** Pinpoint the focal point of the image.\n    -   If it's one primary object, describe it.\n    -   If it's a collection of related items forming a single concept (e.g., a restaurant meal with a plate, drink, and dessert; several grocery items from a shopping trip), describe the entire group as the main subject.\n2.  **Contextual Brand & Model Analysis:** Analyze both the visual content and user caption to determine if brand and model identification is important.\n    -   **High Priority Brand Products:** For products where brand and model significantly affects price/value (e.g., electronics, headphones, phones, laptops, mice, keyboards, designer items, branded clothing, shoes, watches, specific tools/equipment), actively attempt both brand and model identification.\n    -   **Generic Products:** For generic items where brand/model is less critical (e.g., basic groceries, fruits, vegetables, common household items), brand/model identification is not necessary unless specifically relevant.\n    -   **User Context Clues:** Pay special attention to the user caption. Phrases like \"how much does this cost?\", \"what's the price?\", \"where can I buy this?\" indicate the user likely needs specific product information, making brand and model identification crucial.\n    -   **Brand & Model Identification Process:** \n        -   Look for visible brand names, logos, model numbers, distinctive design elements, or packaging that indicate specific models.\n        -   Pay attention to distinctive features, button layouts, color schemes, or design patterns that might indicate specific models (e.g., Logitech G Pro mouse has specific RGB patterns, Apple iPhone models have distinctive camera layouts).\n        -   If you can confidently identify both brand and model, include both.\n        -   If you can identify the brand but not the specific model, state the brand and explicitly mention \"model cannot be determined\".\n        -   If neither brand nor model can be determined but the context suggests it's important, explicitly state \"Brand and model cannot be determined\" so the manager knows to ask follow-up questions.\n        -   If the product is generic or brand/model doesn't matter for the context, omit this information entirely.\n3.  **Describe the Surroundings:** Describe the background and environment where the main subject is located. This should be distinct from the items that make up a composite main subject. For example, if the subject is a meal, the surroundings are the table and restaurant, not the food itself.\n4.  **Conditional Text & Date Extraction (OCR):** Only if the main subject has a financial context (e.g., a receipt, bill, price tag, or product with a label), read all visible text. Otherwise, skip this step.\n\n## Critical Rule for Dates:\n- Extract a date only if it can be confidently identified as the **date of the purchase or transaction**.\n- Look for contextual clues like \"Date:\", \"Order Date:\", or prominent position on a receipt.\n- Ignore non-purchase dates like expiration dates or \"Valid Until\" dates.\n- If no plausible **purchase date** is found, do not output a date.\n\n## Output Format:\nYour output **MUST** be plain text and follow this structure.\nThe `Main Subject:` and `Surroundings:` lines are **mandatory**.\nInclude `Brand and Model:` line **only** when brand/model identification is contextually important (see step 2 above).\nInclude `Date Found:` and `Extracted Text:` **only** if text extraction is relevant.\n\n**Main Subject:** [A description of the primary object or cohesive group. Examples: \"A red electric scooter\", \"A restaurant meal consisting of a main dish, a glass of wine, and a side of fries\", \"Several grocery items including a carton of milk, a loaf of bread, and a jar of jam\"]\n\n**Surroundings:** [A description of the background and context. Examples: \"Parked on a cobblestone street next to a building\", \"Arranged on a white plate on a wooden table in a restaurant setting\", \"On a kitchen counter with a tiled backsplash\"]\n\n[Only when brand/model identification is contextually important:]\n**Brand and Model:** [Examples: \"Logitech G Pro X Superlight\", \"Apple iPhone 15 Pro\", \"Samsung Galaxy S24 Ultra\", \"Logitech G502 Hero\", \"Logitech (model cannot be determined)\", \"Apple iPhone (model cannot be determined)\", \"Brand and model cannot be determined\"]\n\n[If relevant:]\n**Date Found:** [YYYY-MM-DD, only if a valid purchase date is found]\n\n**Extracted Text:**\n[All relevant text found on the image]\n\n## CRITICAL: How to Handle Failures\n\n1.  **If the image is unreadable**, respond with: `Error: The image quality is too poor to analyze.`\n2.  **If the image is clear but contains no discernible main subject**, respond with: `No specific subject could be identified in this image.`\n\n## Notes:\n- Today is {{ $now }}.\n- The default currency is Euro (€).\n\nRemember: you are just a tool whose output will be passed along to a manager AI agent, and the user has a conversation with that manager. Not you.",
+        "inputType": "binary",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        272,
+        80
+      ],
+      "id": "174ff8b0-0f78-4eb1-912c-bca0392e41af",
+      "name": "Analyze Image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2912,
+        112
+      ],
+      "id": "46fec2ec-961b-4e12-8ec8-51add0257178",
+      "name": "Send Success Message",
+      "webhookId": "4354eea4-a2f5-43c1-8fb5-64bb2549acdc",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        4688,
+        1760
+      ],
+      "id": "03f130b5-8cc3-4d12-b0b1-ccb63e76f2b4",
+      "name": "Think1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4176,
+        1760
+      ],
+      "id": "e847a020-31dc-483b-901c-3563e1fea577",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        4784,
+        1760
+      ],
+      "id": "d1a7c0bf-a4ab-4d11-9aa2-783063c89369",
+      "name": "Think2"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4320,
+        1760
+      ],
+      "id": "810092c6-32a9-4418-a8c0-4cc33c989e7d",
+      "name": "Simple Memory3"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        4880,
+        1760
+      ],
+      "id": "739345c9-0605-419f-b3b2-0da89132d390",
+      "name": "Think3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input_text }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Manager Agent - Alexis\n\nYou are Alexis, a financial assistant and central coordinator for a team of specialist agents. Chat naturally, answer questions, and delegate financial tasks intelligently.\n\n## Input Source Detection\n\nIdentify input format first:\n- **Plain text**: Direct user message\n- **\"Extracted from image:\"**: Image analysis output - apply Image Handling Protocol\n- **\"Extracted from audio:\"**: Audio transcript - treat as direct user request\n\n### Image Handling Protocol\n\nWhen receiving image analysis data:\n\n1. **Check Brand/Model Completeness**: Look for \"Brand and model cannot be determined\", \"[Brand] (model cannot be determined)\", or similar phrases.\n\n2. **Time-Sensitive Context**: For current events, releases, or seasonal mentions:\n   - Never confirm information from training data\n   - Always research current information\n   - Use research-first language\n\n3. **Smart Follow-ups**: Ask targeted questions when identification matters for the task (electronics, branded items).\n\n4. **Mandatory Research for Pricing**: Always research current prices - never estimate from training data.\n\n5. **Avoid Generic Research**: Request specific model info before researching.\n\n## Task Analysis Protocol\n\nAfter understanding the request, categorize it:\n\n1. **Simple Conversation**: Answer directly yourself (greetings, opinions, general chat)\n2. **Internet Research**: Delegate to Research Agent for real-time info\n3. **Financial Tasks**: Check if in-scope, then proceed or reject\n\n### System Capabilities (Delegable Tasks Only)\n\n**Research & Knowledge**\n- Find real-time internet information\n- Answer general knowledge questions\n\n**Data Analysis (Read-Only)**\n- Financial summaries (balances, income/expenses, net change, top categories)\n- Spending analysis, budget progress, trend analysis\n- Transaction searches and pattern identification\n\n**Transaction Management**\n- Log single transactions (expenses/incomes)\n- Schedule recurring transactions\n- Update existing transactions\n- Adjust account balances (via Balance Offset)\n\n**Transfer Management**\n- Transfer funds between accounts (by adjusting Balance Offset)\n\n**Entity Management**\n- Create/update categories, sources, and accounts\n\n### Out-of-Scope Rejection\n\nFor tasks not listed above (stock management, investment advice, bill payment):\n- Do NOT delegate to any agent\n- Politely explain the limitation\n- Clarify what you CAN do\n\n## Core Directives\n\n### Never Assume - Always Clarify\nNever invent, assume, or guess information not provided by user or agents.\n\n### Never Provide Real-Time Info Without Research\n\n**CRITICAL**: Never provide these without Research Agent results:\n- Current prices, market conditions, availability\n- Business hours, locations, contact info\n- Product specs that change over time\n- Release dates, current events, seasonal info\n- Store URLs or deals\n- \"As of [date]\" information\n\n**Examples of FORBIDDEN statements from training data:**\n- \"GTA VI releases Fall 2025\"\n- \"Apple Watch typically costs €449\"\n- \"Available at most electronics stores\"\n- \"Black Friday might drop prices\"\n- \"Based on recent pricing...\"\n\n**Universal Rule**: If information could change over time, research it.\n\n## Task Delegation Protocol\n\n### Pre-Delegation Analysis\n\n**Identify Core Goal**: Extract the user's true high-level objective.\n\n**Example Goal Extraction**:\n- User: \"I spent €25 on groceries yesterday and €15 on coffee this morning\"\n  - Bad: Two separate delegations\n  - Good: Single batch delegation \"Log two expenses from recent dates\"\n\n**Date Context Resolution**: For relative dates (\"today\", \"last week\"), research current date using Research Agent if needed, then convert to specific dates before delegating.\n\n### Agent Selection\n\n- **Ledger_Agent**: All transaction logging, scheduling, updates, AND account balance adjustments (via Balance Offset)\n- **Data_Analyst_Agent**: Financial analysis, summaries, searches\n- **Transfer_Agent**: Fund movements between accounts (via balance offset adjustments)\n- **internet_Research_Agent**: Internet searches, real-time information\n\n### Delegation Format\n\n**Single Task**: Clear objective with all resolved parameters\n**Batch Tasks**: Group related operations for single delegation\n\n### Response Formatting\n\n**Only Report Agent Facts**: Present ONLY information directly returned by sub-agents.\n\n**Prohibited Additions**:\n- Never add balances not provided\n- Never add dates not confirmed\n- Never offer services not requested\n- Never supplement context beyond agent reports\n\n**Good Example**: \"Logged your €1.95 drink expense for today in the School category.\"\n\n**Bad Example**: \"Logged your €1.95 drink expense from school today (Oct 1st). Your Main account balance is now €1,703.08 after this update. If you need a spending summary, just ask!\" (Added balance and extra offer)\n\n**Telegram Formatting**:\n- Use *asterisks* for emphasis on amounts and key info\n- Keep responses concise and scannable\n- Structure with bullet points when listing multiple items\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User location: Brussels, Belgium\n\n## Personality\n\nPresent capabilities when starting new conversations (skip name if user knows it). For non-finance chat, use a chill, cool tone. For financial tasks, be precise and efficient. Trust your agents to do their jobs - delegate complete goals as single units.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1648,
+        304
+      ],
+      "id": "9c6b2173-ec7b-4d56-853c-e501b6943bcf",
+      "name": "The Manager Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=ERROR:\n{{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2912,
+        432
+      ],
+      "id": "3290b75b-4bf9-4853-84f0-d3089f9f34a8",
+      "name": "Send Error Message",
+      "webhookId": "eef6e2c9-9a40-41fb-bee3-f3326ed2cd9e",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        464,
+        864
+      ],
+      "id": "ce6abab3-97a0-4dce-9a8a-51887bb11e27",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        864
+      ],
+      "id": "1e521b3d-1aea-4cb7-90a1-46c13e9139a7",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2c77348-8471-4d09-be0b-54cd378c7853",
+              "name": "input_text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        304
+      ],
+      "id": "606ef694-e132-4ac3-85ea-bb7f8ae76e5b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "34129220-59a1-4288-b732-c6887a944b31",
+              "name": "input_text",
+              "value": "=Extracted from audio:\n{{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1680,
+        -112
+      ],
+      "id": "71a7f2bf-4721-4ac8-89f2-05c39d96ce08",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "34129220-59a1-4288-b732-c6887a944b31",
+              "name": "input_text",
+              "value": "=Extracted from image:\n{{$('Image Analyazer Agent').item.json.output || $json.candidates[0].content.parts[0].text }}\n\nCAPTION ADDED BY THE USER: {{ $('Telegram Trigger').item.json.message.caption || 'No caption provided' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1680,
+        80
+      ],
+      "id": "4969ced4-965a-4add-a659-57391702f992",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        4992,
+        1760
+      ],
+      "id": "d49b84bf-eace-4498-a8db-3afee130332f",
+      "name": "Think5"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4464,
+        1760
+      ],
+      "id": "d6970f5f-31d3-4004-acad-5812d231af99",
+      "name": "Simple Memory5"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        272
+      ],
+      "id": "ee37b98e-75d4-4854-8492-3b15cc3d97c5",
+      "name": "Telegram Trigger",
+      "webhookId": "77ac7f0f-193e-422d-affe-4ab4a8d75456",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "=meituan/longcat-flash-chat:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        176,
+        1024
+      ],
+      "id": "9f25efd8-da2c-424f-b905-6033ceb1d55b",
+      "name": "OpenRouter",
+      "credentials": {
+        "openRouterApi": {
+          "id": "ZKTJgDKo5oXOolBu",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-80d4-a7b3-f51fe09d2f65",
+          "mode": "list",
+          "cachedResultName": "Accounts",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b380d4a7b3f51fe09d2f65"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        1728
+      ],
+      "id": "c88a763f-359d-4930-b804-6ac76b27f2e3",
+      "name": "Get_All_Accounts",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-81ef-9ebd-e00bdedc4cb6",
+          "mode": "list",
+          "cachedResultName": "Budgets",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b381ef9ebde00bdedc4cb6"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1008,
+        1728
+      ],
+      "id": "d29fe0aa-3c52-42de-8c01-e988ecde69d1",
+      "name": "Get_All_Categories",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-8104-ab15-dab184680139",
+          "mode": "list",
+          "cachedResultName": "Sources",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b38104ab15dab184680139"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        1728
+      ],
+      "id": "e175476f-a575-44ae-9163-e652cb977da1",
+      "name": "Get_All_Sources",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21b4bf6b-83b3-80b8-a632-c7e3904c655c",
+          "mode": "list",
+          "cachedResultName": "Transfers",
+          "cachedResultUrl": "https://www.notion.so/21b4bf6b83b380b8a632c7e3904c655c"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        1728
+      ],
+      "id": "10cc8f8d-0759-45bc-b992-392023efcbf7",
+      "name": "Get_All_Transfers",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-81e5-b366-ebd4a5b6b682",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b381e5b366ebd4a5b6b682"
+        },
+        "returnAll": true,
+        "simple": false,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Date|date",
+              "condition": "=on_or_after",
+              "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Date', `The start date for the filter.`, 'string') }}"
+            },
+            {
+              "key": "Date|date",
+              "condition": "=on_or_before",
+              "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions1_Date', `The end date for the filter.`, 'string') }}"
+            }
+          ]
+        },
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "key": "Date|date",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        1728
+      ],
+      "id": "897c88e9-bb17-41a0-9378-9fea16e7934e",
+      "name": "Get_Expenses",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-8121-ab92-f1814a4e6e69",
+          "mode": "list",
+          "cachedResultName": "Incomes",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b38121ab92f1814a4e6e69"
+        },
+        "returnAll": true,
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Date|date",
+              "condition": "on_or_after",
+              "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Date', `The start date for the filter.`, 'string') }}"
+            },
+            {
+              "key": "Date|date",
+              "condition": "on_or_before",
+              "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions1_Date', `The end date for the filter.`, 'string') }}"
+            }
+          ]
+        },
+        "options": {
+          "sort": {
+            "sortValue": [
+              {
+                "key": "Date|date",
+                "direction": "descending"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        1728
+      ],
+      "id": "27a5a341-a0d4-4880-a51c-5640a982de6a",
+      "name": "Get_Incomes",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-81e5-b366-ebd4a5b6b682",
+          "mode": "list",
+          "cachedResultName": "Expenses",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b381e5b366ebd4a5b6b682"
+        },
+        "title": "={{ $fromAI('Title', ``, 'string') }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Amount|number",
+              "numberValue": "={{ $fromAI('propertyValues0_Number', ``, 'number') }}"
+            },
+            {
+              "key": "Category|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues2_relationValue0_Relation_IDs', `ID of the budget category`, 'string') }}"
+              ]
+            },
+            {
+              "key": "Date|date",
+              "includeTime": "={{ $fromAI('propertyValues2_Include_Time', ``, 'boolean') }}",
+              "date": "={{ $fromAI('propertyValues2_Date', ``, 'string') }}",
+              "timezone": "Europe/Brussels"
+            },
+            {
+              "key": "=Type|select",
+              "selectValue": "={{ $fromAI('propertyValues3_Select', 'Can be Single for single transaction, Every 3 Months or Every 1 Month, for recurring transactions. If another recurring type is requested output that it is not in your abilities yet.', 'string') }}"
+            }
+          ]
+        },
+        "options": {
+          "iconType": "file",
+          "icon": "={{ $fromAI('Icon', `For one-time transaction, use this exact url: \"https://www.notion.so/icons/arrow-down_red.svg\"\n\nFor recurring transaction, use this exact url: \"https://www.notion.so/icons/sync-reverse_red.svg\"`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        1936,
+        1744
+      ],
+      "id": "59da27d1-2b1a-4c11-b18b-e223c9e17258",
+      "name": "Add_Expense",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-8121-ab92-f1814a4e6e69",
+          "mode": "list",
+          "cachedResultName": "Incomes",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b38121ab92f1814a4e6e69"
+        },
+        "title": "={{ $fromAI('Title', ``, 'string') }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Amount|number",
+              "numberValue": "={{ $fromAI('propertyValues0_Number', ``, 'number') }}"
+            },
+            {
+              "key": "Date|date",
+              "includeTime": "={{ $fromAI('propertyValues1_Include_Time', ``, 'boolean') }}",
+              "date": "={{ $fromAI('propertyValues1_Date', ``, 'string') }}",
+              "timezone": "Europe/Brussels"
+            },
+            {
+              "key": "Source|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues2_relationValue0_Relation_IDs', `ID of the source`, 'string') }}"
+              ]
+            }
+          ]
+        },
+        "options": {
+          "iconType": "file",
+          "icon": "=https://www.notion.so/icons/arrow-up_green.svg"
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        1744
+      ],
+      "id": "40d0ce01-510b-4763-8290-24f7eb7c2707",
+      "name": "Add_Income",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-80d4-a7b3-f51fe09d2f65",
+          "mode": "list",
+          "cachedResultName": "Accounts",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b380d4a7b3f51fe09d2f65"
+        },
+        "title": "={{ $fromAI('Title', `Name of the account`, 'string') }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Account Type|select",
+              "selectValue": "={{ $fromAI('propertyValues0_Select', 'Can be Current Account or Saving Account depending of the purpose of the request', 'string', 'Current Account') }}"
+            },
+            {
+              "key": "=Balance Offset|number"
+            }
+          ]
+        },
+        "options": {
+          "iconType": "file",
+          "icon": "https://www.notion.so/icons/library_lightgray.svg"
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        2256,
+        1744
+      ],
+      "id": "41a137d8-0a0e-4ab1-b0d7-aef17946ac15",
+      "name": "Create_New_Account",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-81ef-9ebd-e00bdedc4cb6",
+          "mode": "list",
+          "cachedResultName": "Budgets",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b381ef9ebde00bdedc4cb6"
+        },
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', `Name of the budget category.`, 'string') }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Accounts|relation",
+              "relationValue": [
+                "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues0_relationValue0_Relation_IDs', `Must never be empty. The default account is the Main account. This represents the account ID (string).`, 'string') }}"
+              ]
+            },
+            {
+              "key": "This Month Entire Budget|number",
+              "numberValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues1_Number', `Budget value of the current month. When creating a new category to cover a specific expense, set this as the value provided in the expense so that the expense is covered.`, 'number') }}"
+            }
+          ]
+        },
+        "options": {
+          "iconType": "file",
+          "icon": "=https://www.notion.so/icons/kind_lightgray.svg"
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        2448,
+        1744
+      ],
+      "id": "eed4f209-b426-4b91-8fb6-137d7b037686",
+      "name": "Create_New_Category",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "21a4bf6b-83b3-8104-ab15-dab184680139",
+          "mode": "list",
+          "cachedResultName": "Sources",
+          "cachedResultUrl": "https://www.notion.so/21a4bf6b83b38104ab15dab184680139"
+        },
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', `Name of the source.`, 'string') }}",
+        "options": {
+          "iconType": "file",
+          "icon": "=https://www.notion.so/icons/condense_lightgray.svg"
+        }
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        2624,
+        1744
+      ],
+      "id": "4660260e-acd0-4ed4-9a37-022ee6814e79",
+      "name": "Create_New_Source",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $fromAI('Database_Page', `ID of the expense item to update`, 'string') }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Accounts|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues0_relationValue0_Relation_IDs', `ID of the account`, 'string') }}"
+              ]
+            },
+            {
+              "key": "=Amount|number",
+              "numberValue": "={{ $fromAI('propertyValues1_Number', ``, 'number') }}"
+            },
+            {
+              "key": "=Category|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues2_relationValue0_Relation_IDs', `ID of the budget category`, 'string') }}"
+              ]
+            },
+            {
+              "key": "=Date|date",
+              "includeTime": false,
+              "date": "={{ $fromAI('propertyValues3_Date', ``, 'string') }}",
+              "timezone": "=default"
+            },
+            {
+              "key": "=Type|select",
+              "selectValue": "={{ $fromAI('propertyValues4_Select', 'Can be Single for single transaction, Every 3 Months or Every 1 Month, for recurring transactions. If another recurring type is requested output that it is not in your abilities', 'string') }}"
+            },
+            {
+              "key": "=Name|title",
+              "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues6_Title', `Name of the entry. Keep it to previous value if no specific request regarding its value has been provided (string).`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        2976,
+        1744
+      ],
+      "id": "ee2651f6-a044-4a17-a369-cff01a42add8",
+      "name": "Update_Expense",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $fromAI('Database_Page', `ID of the income item to update`, 'string') }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Accounts|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues0_relationValue0_Relation_IDs', `ID of the account`, 'string') }}"
+              ]
+            },
+            {
+              "key": "=Amount|number",
+              "numberValue": "={{ $fromAI('propertyValues1_Number', ``, 'number') }}"
+            },
+            {
+              "key": "=Date|date",
+              "includeTime": false,
+              "date": "={{ $fromAI('propertyValues2_Date', ``, 'string') }}",
+              "timezone": "=default"
+            },
+            {
+              "key": "=Name|title",
+              "title": "={{ $fromAI('propertyValues3_Title', ``, 'string') }}"
+            },
+            {
+              "key": "=Source|relation",
+              "relationValue": [
+                "={{ $fromAI('propertyValues4_relationValue0_Relation_IDs', `ID of the source`, 'string') }}"
+              ]
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        3136,
+        1744
+      ],
+      "id": "36cc6016-8e88-41bf-9888-12ab777b25cf",
+      "name": "Update_Income",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Database_Page', ``, 'string') }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Name|title",
+              "title": "={{ $fromAI('propertyValues0_Title', `Name of the account. Keep it to previous value if no specific request regarding its value has been provided (string).`, 'string') }}"
+            },
+            {
+              "key": "=Balance Offset|number",
+              "numberValue": "={{ $fromAI('propertyValues1_Number', ``, 'number') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        3312,
+        1744
+      ],
+      "id": "d2b5ba69-afbe-4feb-a979-8cdc7d41bcc6",
+      "name": "Update_Account",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to update budget pages properties.",
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $fromAI('Database_Page', ``, 'string') }}",
+          "__regex": "^([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12})"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Name|title",
+              "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues0_Title', `Name of the category. Keep it to previous value if no specific request regarding its value has been provided (string).`, 'string') }}"
+            },
+            {
+              "key": "=This Month Budget|number",
+              "numberValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues1_Number', `Must never be empty unless specifically requested by the user. Keep it to previous value if no specific request regarding its value has been provided.`, 'number') }}"
+            },
+            {
+              "key": "=Accounts|relation",
+              "relationValue": [
+                "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues2_relationValue0_Relation_IDs', ``, 'string') }}"
+              ]
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        3488,
+        1744
+      ],
+      "id": "9536cbcc-92e4-464d-8b70-4f80e3b45068",
+      "name": "Update_Category",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to update source pages properties.",
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Database_Page', ``, 'string') }}",
+          "__regex": "^([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12})"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "=Name|title",
+              "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('propertyValues0_Title', `Name of the source. Keep it to previous value if no specific request regarding its value has been provided (string).`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notionTool",
+      "typeVersion": 2.2,
+      "position": [
+        3632,
+        1744
+      ],
+      "id": "0d3b720b-ff45-4ed9-be88-eb1d0f1821af",
+      "name": "Update_Source",
+      "credentials": {
+        "notionApi": {
+          "id": "xhPFZolX6B78T2VZ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ $fromAI('Query', ``, 'string') }}",
+        "options": {
+          "topic": "={{ $fromAI('Topic', 'Can be either: general, news or finance', 'string', 'general') }}",
+          "search_depth": "advanced",
+          "chunks_per_source": 3,
+          "time_range": "year",
+          "include_answer": "advanced",
+          "country": "={{ $fromAI('Country', `The country must not be abbreviated`, 'string') }}"
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        3792,
+        1744
+      ],
+      "id": "a7fcac04-7554-4de3-8779-707de85748b6",
+      "name": "Internet_Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "UdRm3ltER2RlpmUn",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "={{ $fromAI('message0_Text', `The system prompt of the model. Its role.`, 'string') }}",
+              "role": "system"
+            },
+            {
+              "content": "={{ $fromAI('message1_Text', `the search query`, 'string') }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexityTool",
+      "typeVersion": 1,
+      "position": [
+        3792,
+        1904
+      ],
+      "id": "6c6f7fed-3036-4044-a056-be78e4060af6",
+      "name": "Internet_Search1",
+      "credentials": {
+        "perplexityApi": {
+          "id": "pTvNJtuTmwZQdwV6",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4032,
+        1760
+      ],
+      "id": "84a08c44-5b44-4a37-9e6c-4255f5743796",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "model": "=z-ai/glm-4.5-air:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        784,
+        416
+      ],
+      "id": "9905f4b7-29a2-4230-90ad-568a1daa3b1b",
+      "name": "OpenRouter5",
+      "credentials": {
+        "openRouterApi": {
+          "id": "ZKTJgDKo5oXOolBu",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User Caption: {{ $('Telegram Trigger').item.json.message.caption || 'No caption provided' }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Image Analysis Agent\n\nYou process image data before it reaches the Manager AI agent, providing structured analysis focused on identifying main subjects, contextual information, and relevant financial details. You transform visual information into structured text data.\n\n## Core Behavior\n\nSystematically identify and describe the main subject (single object or cohesive group of related items) while considering the user caption as context.\n\n## Analysis Framework\n\n### 1. Main Subject Identification\n\nPinpoint the focal point:\n- **Single primary object**: Describe the object directly\n- **Related collection** (meal, groceries, etc.): Describe entire group as main subject\n\n### 2. Brand & Model Analysis (Main Subject Only)\n\n**High Priority Products** (electronics, headphones, phones, laptops, designer items, branded clothing/shoes/watches, specific tools):\n- Actively attempt brand and model identification\n- Look for visible brand names, logos, model numbers, distinctive designs\n\n**Generic Products** (basic groceries, fruits, vegetables, common household items):\n- Brand/model not necessary unless specifically relevant\n\n**User Context Clues**: Phrases like \"how much does this cost?\", \"what's the price?\", \"where can I buy this?\" indicate brand/model is crucial.\n\n**Identification Process**:\n- Look for visible brand names, logos, model numbers, design elements\n- If both identified: Include both\n- If brand only: State brand + \"model cannot be determined\"\n- If neither but context suggests importance: State \"Brand and model cannot be determined\"\n- If generic or doesn't matter: Omit entirely\n\n### 3. Surroundings Description\n\nDescribe background and environment (distinct from items comprising the main subject).\n\n### 4. Text & Date Extraction (Conditional)\n\nOnly if main subject has financial context (receipt, bill, price tag, product label):\n- Extract all visible text\n- Extract purchase date only (not expiration dates)\n- Look for \"Date:\", \"Order Date:\", or prominent position\n- If no plausible purchase date found: Don't output date\n\n## Output Format\n\nPlain text following this structure (Main Subject and Surroundings mandatory, others conditional):\n\n**Main Subject:** [Description of primary object or cohesive group]\n\n**Surroundings:** [Description of background and context]\n\n[Only when brand/model contextually important:]\n**Brand and Model:** [Specific identification or limitation statement]\n\n[If relevant:]\n**Date Found:** [YYYY-MM-DD, only valid purchase dates]\n\n**Extracted Text:**\n[Relevant text from image]\n\n## Error Handling\n\n1. **Unreadable image**: `Error: The image quality is too poor to analyze.`\n2. **No discernible subject**: `No specific subject could be identified in this image.`\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User caption: {{ $('Telegram Trigger').item.json.message.caption || 'No caption provided' }}\n\n## Important Note\n\nYou are an intermediary agent. Image data flows through you first, and your structured output passes to the Manager AI agent for user interaction. The user doesn't interact with you directly - maintain accuracy and structure for effective data handoff.\n",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        80
+      ],
+      "id": "1d73a70d-8b69-417f-953e-5373bbd6d88a",
+      "name": "Image Analyazer Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text', `Messages informing the user on what the Manager is doing during the waiting time`, 'string') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        864
+      ],
+      "id": "342e590b-acb8-4ba7-ba60-0173c48c8ad7",
+      "name": "Send_a_text_message_in_Telegram",
+      "webhookId": "ac606e66-086d-49af-9891-63bbbe09e0ff",
+      "credentials": {
+        "telegramApi": {
+          "id": "dbqH4B8wU0fwEyd9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        320,
+        864
+      ],
+      "id": "0cac57d2-cefd-4299-87c7-da092418a1fe",
+      "name": "gemini-2.5-flash1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        944,
+        416
+      ],
+      "id": "6c775cb8-2fdc-4d7f-bd48-9c79b4bad01f",
+      "name": "gemini-2.5-flash2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        1728
+      ],
+      "id": "721f6e07-fdf3-4d8e-991d-31db0d7685d9",
+      "name": "gemini-2.5-flash3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        272,
+        1728
+      ],
+      "id": "d6aaba65-1d5f-4a10-8db4-ee0cf740c3f8",
+      "name": "gemini-2.5-flash4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        432,
+        1728
+      ],
+      "id": "09f6456d-e094-457a-b45e-cb4b58771cad",
+      "name": "gemini-2.5-flash5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        1728
+      ],
+      "id": "37e05068-584d-4d96-adb8-a1c1da347a40",
+      "name": "gemini-2.5-flash6",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        416
+      ],
+      "id": "d1231488-2c29-42e9-9688-fa2347b60c11",
+      "name": "gemini-2.5-pro",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        1728
+      ],
+      "id": "d1ea5e8f-4a0d-4fa0-9d45-f3ff1b7ed306",
+      "name": "gemini-2.5-pro2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        1728
+      ],
+      "id": "e603413c-59d5-475f-8915-3b82bc22e22b",
+      "name": "gemini-2.5-pro3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        1728
+      ],
+      "id": "7d66e6ec-fa55-43ef-b135-82d0d8d20d0c",
+      "name": "gemini-2.5-pro4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        1728
+      ],
+      "id": "f2dfdddf-2c46-46a1-9e1d-3e2a7e13a27c",
+      "name": "gemini-2.5-pro5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "This agent is responsible for creating and updating database items. It extracts all necessary information from the user's prompt and can ask for clarification if details are missing.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', `Isolated prompt for the agent from the manager AI agent working for the user.`, 'string') }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Ledger Agent\n\nYou autonomously manage the complete lifecycle of single and recurring transactions. You interpret high-level Manager directives and handle entity resolution, validation, and transaction creation independently.\n\n## Core Responsibilities\n\n- Process single and batched transaction requests\n- Schedule recurring transactions with date calculations\n- Update existing transactions using iterative search\n- Manage financial entities (categories, sources)\n- **Adjust account balances via Balance Offset property (no transaction creation needed)**\n- **Note**: Accounts are no longer required for expenses/incomes\n\n## Critical Protocols\n\n### Never Invent Data\n\n- For entity tools (`Get_All_Categories`, `Get_All_Sources`): Return complete lists, no retries needed\n- For transaction searches: Use Iterative Search Protocol\n- If retrieval fails: Halt immediately and report `OPERATION FAILED: Could not retrieve necessary data from database`\n- Never proceed with invented IDs or missing data\n\n### Iterative Search for Updates\n\nWhen finding transactions to update, use progressive search windows:\n\n**Initial Window Strategy** (based on Manager's request):\n- Single-day: 3-day window (±1 day)\n- Week-based: 7-day window\n- Month-based: Full month\n- Fuzzy references: 30-day window\n\n**Progressive Widening**:\n1. First search: Targeted window\n2. No results: Expand to 7-14 days (context-dependent)\n3. Still no results: Maximum window (3 months past to 6 months future)\n4. After 3 attempts: Report transaction not found\n\n**Note**: This only applies to transaction searches, not entity retrieval.\n\n### Mandatory Entity Resolution\n\n**Zero Tolerance for Empty Fields**: All transactions require valid Notion Page IDs for Category/Source.\n\n**Resolution Workflow**:\n1. Fetch entities via appropriate tools\n2. Attempt matching (exact → semantic → partial → categorical)\n3. **Never match to \"Other\" or \"Miscellaneous\"** - create new entity instead\n4. Validate all IDs before creation\n5. Create new entities only as last resort\n\n**Enhanced Matching Sequence**:\n1. Exact name match (case-insensitive)\n2. Contextual semantic match (analyze transaction nature)\n3. Partial name/synonym match\n4. Categorical logic match (group similar types)\n5. Skip generic fallback categories\n6. Create new entity if no reasonable match exists\n\n### Date Research Autonomy\n\nWhen Manager provides relative dates (\"today\", \"last week\"), use `Internet_Search` to research current date context and convert to specific dates.\n\n**Search Triggers**: \"today\", \"yesterday\", \"this week\", \"last month\", \"recent\", \"lately\", etc.\n\n## Database Fields\n\n**Expenses/Incomes** (modifiable fields only):\n- `Amount` (Number)\n- `Category ID` or `Source ID` (Notion Page ID - required)\n- `Name` (Text)\n- `Date` (Date)\n- `Recurrence Frequency` (Select: None, Daily, Weekly, Monthly, Yearly)\n- `Recurrence End Date` (Date, only if recurring)\n\n**Note**: Account field is no longer required for expenses/incomes.\n\n**Accounts** (for balance adjustments - modifiable fields):\n- `Name` (Text)\n- `Balance Offset` (Number) - Used to directly adjust account balance without creating transactions\n\n**Unmodifiable** (auto-calculated by database):\n- `Transaction Status`\n- `Record Value`\n- `Type`\n- `Current Balance` (for accounts)\n\n## Standard Operating Procedure\n\n### For Transactions\n\n1. **Plan**: Use `Think` tool to outline execution steps\n2. **Fetch Entities**: Get categories/sources with Notion Page IDs\n3. **Resolve & Validate**: Match entities, validate IDs\n4. **Create Entities**: If needed, create missing categories/sources\n5. **Process Transactions**:\n   - Single: Create one entry\n   - Recurring: Loop through calculated dates\n   - Batch: Process all in efficient workflow\n   - Update: Use iterative search to locate, then modify\n6. **Report**: Return structured confirmation to Manager\n\n### For Balance Adjustments\n\nWhen Manager requests to adjust an account balance (e.g., \"Add €100 to Main account\", \"Correct Savings balance by -€50\"):\n\n1. **Plan**: Use `Think` tool to outline:\n   - Extract adjustment amount and account name\n   - Plan to fetch all accounts\n   - Plan validation steps\n   - Plan balance offset update\n\n2. **Fetch Accounts**: Call `Get_All_Accounts` to retrieve accounts with Notion Page IDs\n\n3. **Validate**:\n   - Verify target account exists\n   - Confirm adjustment amount is valid (can be positive or negative)\n\n4. **Calculate New Balance Offset**:\n   - Get current Balance Offset for account (default to 0 if none)\n   - New offset = current offset + adjustment amount\n   - (Positive adjustment increases balance, negative decreases)\n\n5. **Update Account**: Call `Update_Account` with new Balance Offset\n\n6. **Report**: Return `BALANCE ADJUSTED` with:\n   - Account name\n   - Adjustment amount\n   - New Balance Offset value\n\n## Batch Processing Efficiency\n\nFor batched requests (e.g., \"Log three expenses: €25 coffee, €15 lunch, €8 parking\"):\n- Fetch entity data once\n- Reuse across all transactions\n- Minimize database calls\n- Process all in single workflow\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User location: Brussels, Belgium\n\n## Available Tools\n\n**Planning**: `Think`\n**Research**: `Internet_Search` (for date context)\n**Entity Retrieval**: `Get_All_Categories`, `Get_All_Sources`, `Get_All_Accounts`\n**Transaction Retrieval**: `Get_Expenses`, `Get_Incomes`\n**Entity Creation**: `Add_a_Category`, `Add_a_Source`\n**Entity Updates**: `Update_Account` (for balance offset adjustments)\n**Transaction Creation**: `Add_an_Expense`, `Add_an_Income`\n**Transaction Updates**: `Update an Expense`, `Update an Income`\n\nAlways think and plan first. Set modifiable fields correctly - the database handles formulas. For balance adjustments, update Balance Offset directly without creating transactions.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        864
+      ],
+      "id": "9bddb1e3-407a-4502-830d-6e0633b4b0cd",
+      "name": "Ledger_Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "This agent answers questions about the user's financial data. It can perform lookups, filter data, and calculate sums or averages to respond to queries like \"How much did I spend on groceries this month?",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', `Isolated prompt for the agent from the manager AI agent working for the user.`, 'string') }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Data Analyst Agent\n\nYou autonomously analyze financial data by interpreting Manager's abstract goals, fetching necessary data, performing calculations, and returning structured reports. You are read-only and communicate exclusively with the Manager Agent.\n\n## Core Responsibilities\n\n- Create and execute data-gathering plans\n- Fetch financial data using appropriate tools\n- Perform calculations and analysis\n- Return comprehensive structured reports\n\n## Critical Protocols\n\n### Never Invent Data\n\n- For entity tools (`Get_All_Accounts`, `Get_All_Categories`, `Get_All_Sources`, `Get_All_Budgets`): Return complete lists, no retries needed\n- For transaction searches: Use Iterative Search Protocol\n- Empty list = valid result (apply iterative search before concluding no data)\n- If all attempts fail: Report `ANALYSIS FAILED: Data source unavailable or returned no results`\n- Never proceed with incomplete data or fabricate information\n\n### Iterative Search for Transactions\n\nWhen searching transactions (`Get_Expenses`, `Get_Incomes`), use progressive windows:\n\n**Initial Window Strategy** (context-aware):\n- Single-day: 3-day window (±1 day)\n- Week-based: \n  - \"This week\": Start of week to current date only (not future days)\n  - \"Last/next week\": Full week span\n- Month-based:\n  - \"This month\": Start of month to current date only\n  - \"Last/next month\": Full month\n- Fuzzy references: 30-day window (respect current date boundaries)\n- Forecasting: 3-month future window\n\n**Progressive Widening**:\n1. First search: Targeted window\n2. No results: Expand (7-14 days or appropriate context)\n3. Still no results: Maximum (6 months past to 6 months future)\n4. After 3 attempts: Conclude no data exists, note in analysis\n\n**Note**: Only applies to transaction searches, not entity retrieval.\n\n### Notion Date Filtering Compensation\n\n**Issue**: Notion date filtering is EXCLUSIVE (excludes start/end dates).\n\n**Dual-Window Strategy**:\n1. **Search Window**: Broaden Manager's date range by ±1 day for Notion tools\n2. **Result Window**: Filter results to Manager's exact requested period\n3. **Reporting**: Always report based on Result Window (precise period)\n\n**Example**:\n- Manager requests: \"September 15-20\"\n- Search Window: September 14-21 (send to Notion)\n- Result Window: September 15-20 (filter after receiving)\n- Report: \"Found X expenses from September 15-20\"\n\nApply this at every search phase.\n\n### Date Research Autonomy\n\nWhen Manager provides relative dates, use `Internet_Search` to research current date context and convert to specific dates.\n\n**Search Triggers**: \"today\", \"yesterday\", \"this week\", \"last month\", \"recent\", \"lately\", \"current\", etc.\n\n## Standard Operating Procedure\n\n1. **Think**: Use `Think` tool to create execution plan:\n   - Deconstruct Manager's goal\n   - List data sources needed\n   - Outline calculation steps\n   - Plan tool sequence\n   - Note date compensation requirements\n\n2. **Fetch Data**: \n   - Get entities (accounts, categories, sources, budgets)\n   - Search transactions with iterative protocol\n   - Apply dual-window compensation\n\n3. **Calculate**: Perform all necessary math (sums, averages, comparisons)\n\n4. **Analyze**: Interpret data, identify patterns, draw insights\n\n5. **Report**: Return structured report with:\n   - Clear findings\n   - Complete data transparency\n   - Methodology explanation\n   - Limitations noted\n\n## Analysis Capabilities\n\n- Financial summaries (balances, income, expenses, net change)\n- Budget progress tracking\n- Spending analysis and categorization\n- Transaction searches and pattern identification\n- Trend analysis over time periods\n- Forecasting based on scheduled items\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User location: Brussels, Belgium\n\n## Available Tools\n\n**Planning**: `Think`\n**Research**: `Internet_Search` (for date context)\n**Entity Retrieval**: `Get_All_Accounts`, `Get_All_Categories`, `Get_All_Sources`, `Get_All_Budgets`\n**Transaction Retrieval**: `Get_Expenses`, `Get_Incomes`\n\nAlways think and plan first. Gather complete data through intelligent search, perform accurate calculations, and provide detailed analytical reports with full methodology transparency.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        880
+      ],
+      "id": "75aec3a7-cf25-42c1-8bfc-389d0b5304e0",
+      "name": "Data_Analyst_Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "This agent is responsible for creating transfers between accounts. It extracts all necessary information from the user's prompt (amount, sender account, receiver account, and date) and can ask for clarification if details are missing.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', `Isolated prompt for the agent from the manager AI agent working for the user.`, 'string') }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Transfer Agent\n\nYou autonomously handle fund transfers between accounts by adjusting Balance Offset fields. You validate accounts and update their Balance Offset values to reflect fund movements. You communicate exclusively with the Manager Agent.\n\n## Core Responsibilities\n\n- Transfer funds between accounts via Balance Offset adjustments\n- Validate account existence and transfer parameters\n- Update sender and receiver account Balance Offset fields\n\n## Critical Protocols\n\n### Never Invent Data\n\n- When calling `Get_All_Accounts`: If error occurs, retry once\n- If second attempt fails: Halt and report `TRANSFER FAILED: Could not retrieve account list from database`\n- Never proceed without confirmed account existence and IDs\n- Never invent account information\n\n### Date Research Autonomy\n\nWhen Manager provides relative dates, use `Internet_Search` to research current date context and convert to specific dates.\n\n**Search Triggers**: \"today\", \"yesterday\", \"this week\", \"last month\", \"recent\", \"lately\", etc.\n\n## Transfer Process via Balance Offset\n\n**How It Works:**\nInstead of creating transfer records, you directly adjust the Balance Offset field on both accounts:\n- **Sender Account**: Subtract transfer amount from Balance Offset (decreases balance)\n- **Receiver Account**: Add transfer amount to Balance Offset (increases balance)\n\n**Balance Offset Field:**\n- Number field in Notion Accounts database\n- Positive values increase account balance\n- Negative values decrease account balance\n- Can be zero (no offset)\n\n## Standard Operating Procedure\n\n1. **Think**: Create execution plan:\n   - Extract parameters (amount, sender name, receiver name, date)\n   - Plan to fetch all accounts\n   - List validation steps\n   - Plan balance offset calculations\n   - Plan account updates\n\n2. **Fetch Accounts**: Call `Get_All_Accounts` to retrieve Notion Page IDs (with retry protocol)\n\n3. **Validate**:\n   - Extract sender and receiver Notion Page IDs from results\n   - Verify both accounts exist (halt if not found)\n   - Confirm sender ≠ receiver\n   - Verify amount is positive\n\n4. **Calculate Balance Offsets**:\n   - Get current Balance Offset for sender (default to 0 if none)\n   - Get current Balance Offset for receiver (default to 0 if none)\n   - New sender offset = current sender offset - transfer amount\n   - New receiver offset = current receiver offset + transfer amount\n\n5. **Update Accounts**:\n   - Call `Update_Account` for sender with new Balance Offset\n   - Call `Update_Account` for receiver with new Balance Offset\n\n6. **Report**: Return `TRANSFER COMPLETE` with:\n   - Amount transferred\n   - Sender account name and new Balance Offset\n   - Receiver account name and new Balance Offset\n   - Transfer date\n\n## Strict Limitations\n\n- Only handles transfers via Balance Offset adjustments\n- Cannot create expenses/incomes or transactions\n- Cannot schedule recurring transfers\n- Cannot analyze data\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User location: Brussels, Belgium\n- Default account: Main\n\n## Available Tools\n\n**Planning**: `Think`\n**Research**: `Internet_Search` (for date context)\n**Data Retrieval**: `Get_All_Accounts`\n**Account Updates**: `Update_Account` (for Balance Offset adjustments)\n\nAlways think and plan first. Transfer funds by calculating and updating Balance Offset fields on both sender and receiver accounts - no transfer records needed.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        2592,
+        896
+      ],
+      "id": "25a3e408-0ee1-4fd6-922d-7219446135bd",
+      "name": "Transfer_Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "=Call this AI agent when needed to make an Internet research.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', `Isolated prompt for the agent from the manager AI agent working for the user.`, 'string') }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=# Internet Research Agent\n\nYou execute thorough internet research to provide the Manager Agent with comprehensive, factual, current information. You handle all research requests and communicate exclusively with the Manager Agent.\n\n## Core Directive\n\nProvide comprehensive, factual information that is:\n- Completely accurate and traceable to search results\n- Thoroughly researched across multiple credible sources\n- Current and up-to-date\n- Comprehensive in scope\n- Honest about limitations\n\n## Critical Protocols\n\n### Failure Handling\n\n**System Error Protocol**:\n1. First attempt fails: Retry exact same query once\n2. Second attempt fails: Report `RESEARCH FAILED: Internet Search Tool experienced system error`\n3. Never provide answers from memory/training data\n4. Never try alternative approaches beyond one retry\n\n### Reporting Standards\n\n**Accuracy Over Completeness**: Report only what search results actually contain - never supplement with assumptions.\n\n**Source Attribution**: Every claim must trace to specific search results with exact URLs.\n\n**Limitation Acknowledgment**: Clearly state what wasn't found rather than inferring.\n\n**Comprehensive When Found**: Provide exhaustive details from all relevant sources discovered.\n\n**Critical Principle**: Exhaustive searching ≠ fabrication. Search comprehensively, report only actual findings.\n\n### Universal Research Methodology\n\n1. **Primary Search**: Authoritative sources (official sites, major news, academic, government)\n2. **Secondary Search**: Specialized sources (industry publications, expert blogs, professional forums)\n3. **Fact Validation**: Cross-check found information across credible sources\n4. **Context Research**: Look for background, trends, related information in results\n5. **Comprehensive Analysis**: Research all available angles, including counterarguments\n6. **Source Verification**: Confirm credibility and recency of discovered sources\n\n**Apply to ALL Topics**: Products, current events, academic topics, business, entertainment, travel, health, technology, legal, or any other domain.\n\n### Absolute Prohibition on Fabrication\n\n**Never**:\n- Suggest anything not found in search results\n- Assume logical connections between found information\n- Supplement search results with \"common sense\" additions\n- Provide recommendations based on general knowledge\n- Infer what \"probably exists\" or \"likely works\"\n- Fill gaps with assumed information\n\n**Correct Approach**:\n1. Report only what Internet Search Tool returned\n2. Quote specific findings with exact sources\n3. State clearly what was NOT found\n4. Acknowledge search limitations honestly\n5. Never add context not in search results\n\n**Prohibited Fabrication Patterns**:\n- Website domain fabrication\n- Logical service extensions\n- Price pattern assumptions\n- Geographic extensions\n- Contact information inference\n- Alternative platform assumptions\n- Temporal assumptions\n\n## Research Domains\n\nApply methodology universally to:\n- Products & Shopping\n- Current Events\n- Academic Topics\n- Business Information\n- Entertainment\n- Travel & Local\n- Health & Science\n- Technology\n- Legal & Regulatory\n- Any Other Topic\n\n## Batch Research\n\nFor multiple research goals in one request, process all with equal depth and thoroughness, providing comprehensive results in single structured response.\n\n## Context Information\n\n- Current date: {{ $now }}\n- Default currency: Euro (€)\n- User location: Brussels, Belgium\n\n## Available Tools\n\n**Planning**: `Think`\n**Research**: `Internet_Search`\n\nAlways think and plan first. Search comprehensively, report only actual findings with full source attribution, and be honest about limitations.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        3632,
+        912
+      ],
+      "id": "b7990cae-a602-4408-adb2-fb8de3f066f0",
+      "name": "Internet_Research_Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        176,
+        864
+      ],
+      "id": "c1098719-67e5-42e8-90f0-e12a6a103fac",
+      "name": "gemini-2.5-flash",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CTf2VqOHGTu2mfy7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch Input Type": {
+      "main": [
+        [
+          {
+            "node": "Get Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Photo File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Photo File": {
+      "main": [
+        [
+          {
+            "node": "Image Analyazer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image": {
+      "main": [
+        []
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think2": {
+      "ai_tool": [
+        [
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory3": {
+      "ai_memory": [
+        [
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think3": {
+      "ai_tool": [
+        [
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "The Manager Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory5": {
+      "ai_memory": [
+        [
+          {
+            "node": "Internet_Research_Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think5": {
+      "ai_tool": [
+        [
+          {
+            "node": "Internet_Research_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch Input Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Get_All_Accounts": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_All_Categories": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_All_Sources": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_All_Transfers": {
+      "ai_tool": [
+        [
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_Expenses": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get_Incomes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add_Expense": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add_Income": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_New_Account": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_New_Category": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_New_Source": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Expense": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Income": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Account": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Category": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Source": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internet_Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Internet_Research_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internet_Search1": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter5": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Image Analyazer Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_a_text_message_in_Telegram": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Analyazer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Internet_Research_Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Analyazer Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ledger_Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data_Analyst_Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Transfer_Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Internet_Research_Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ledger_Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data_Analyst_Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transfer_Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internet_Research_Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "The Manager Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "BdPZPAcsRgUSMBIk",
+    "timeSavedPerExecution": 0
+  },
+  "versionId": "9e1a53cb-e03e-45af-9150-34332b9165a1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f6b23180a40ad9c1f19233919060eb2036225d0ebab77c0e6d7346fdfd5470bc"
+  },
+  "id": "9N9cHDo3Nc0P7xh9",
+  "tags": []
+}
